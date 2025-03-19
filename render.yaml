@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: yt-dlp-app
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: FLASK_ENV
+        value: production
