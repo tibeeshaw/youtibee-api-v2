@@ -11,7 +11,7 @@ ALLOWED_ORIGINS = [
     "https://youtube.tibeechaw.com",
 ]
 
-CORS(app, resources={r"/download/audio": {"origins": ALLOWED_ORIGINS}})
+CORS(app, supports_credentials=True, resources={r"/download/audio": {"origins": ALLOWED_ORIGINS}})
 
 def get_cookies_from_env():
     # Placeholder for getting cookies from the environment variable
