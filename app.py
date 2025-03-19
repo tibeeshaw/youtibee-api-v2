@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request, jsonify, send_file
 import yt_dlp
+import base64
 
 app = Flask(__name__)
 
@@ -9,7 +10,7 @@ def get_cookies_from_env():
     cookies_base64 = os.getenv('YT_COOKIE_BASE64')
     if not cookies_base64:
         raise ValueError("YT_COOKIE_BASE64 environment variable is not set.")
-    return cookies_base64  # In a real scenario, you would decode this and write to the file as needed.
+    return base64.b64decode(cookies_base64).decode('utf-8')  # In a real scenario, you would decode this and write to the file as needed.
 
 @app.route('/download/audio', methods=['GET'])
 def download_audio():
