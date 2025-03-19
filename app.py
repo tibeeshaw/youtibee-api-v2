@@ -1,9 +1,17 @@
 import os
 from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 import yt_dlp
 import base64
 
 app = Flask(__name__)
+
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://youtube.tibeechaw.com",
+]
+
+CORS(app, resources={r"/download/audio": {"origins": ALLOWED_ORIGINS}})
 
 def get_cookies_from_env():
     # Placeholder for getting cookies from the environment variable
@@ -63,4 +71,4 @@ def download_audio():
             os.remove(cookie_file_path)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)
