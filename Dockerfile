@@ -20,6 +20,7 @@ EXPOSE 5000
 
 # Define environment variable to tell Flask it’s in production mode
 ENV FLASK_ENV=production
+ENV YT_COOKIE_BASE64=${YT_COOKIE_BASE64}
 
 # Run the app
 CMD ["python", "app.py"]
