@@ -1,12 +1,7 @@
-import os
 import yt_dlp
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
-
-@app.route('/')
-def index():
-    return "Welcome to the YouTube downloader!"
 
 @app.route('/download/audio', methods=['GET'])
 def download_audio():
@@ -17,11 +12,11 @@ def download_audio():
     ydl_opts = {
         'format': 'bestaudio/best',
         'postprocessors': [{
-            'key': 'FFmpegAudioConvertor',
+            'key': 'FFmpegExtractAudio',  # Correct key
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
-        'outtmpl': 'downloads/%(title)s.%(ext)s',  # where files will be saved
+        'outtmpl': 'downloads/%(title)s.%(ext)s',  # Save location
     }
 
     try:
