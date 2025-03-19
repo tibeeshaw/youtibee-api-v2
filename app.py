@@ -11,7 +11,7 @@ ALLOWED_ORIGINS = [
     "https://youtube.tibeechaw.com",
 ]
 
-CORS(app, resources={r"/download/audio": {"origins": ALLOWED_ORIGINS}})
+CORS(app, origins =ALLOWED_ORIGINS)
 
 def get_cookies_from_env():
     # Placeholder for getting cookies from the environment variable
@@ -19,6 +19,10 @@ def get_cookies_from_env():
     if not cookies_base64:
         raise ValueError("YT_COOKIE_BASE64 environment variable is not set.")
     return base64.b64decode(cookies_base64).decode('utf-8')  # In a real scenario, you would decode this and write to the file as needed.
+
+@app.route("/ping", methods=["GET"])
+def ping():
+    return jsonify({"message": "pong"}), 200
 
 @app.route('/download/audio', methods=['GET'])
 def download_audio():
