@@ -26,10 +26,10 @@ def download_audio():
         print(f"Cookies: {cookies}")  # You can remove this line in production
 
         ydl_opts = {
-            'format': 'bestaudio/best',
+            'format': 'm4a/bestaudio/best',
             'postprocessors': [{
-                'key': 'FFmpegAudioConvertor',
-                'preferredcodec': 'mp3',
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'm4a',
                 'preferredquality': '192',
             }],
             'outtmpl': 'downloads/%(title)s.%(ext)s',  # Save location
