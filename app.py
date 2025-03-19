@@ -18,6 +18,8 @@ def download_audio():
     
     if not video_url:
         return jsonify({'error': 'No video URL provided'}), 400
+    
+    cookie_file_path = 'cookies.txt'
 
     try:
         cookies = get_cookies_from_env()  # Get cookies from the environment variable
@@ -25,7 +27,6 @@ def download_audio():
         # print(f"Cookies: {cookies}")  
 
         # Write cookies to a temporary file
-        cookie_file_path = 'cookies.txt'
         with open(cookie_file_path, 'w') as cookie_file:
             cookie_file.write(cookies)
 
@@ -37,7 +38,7 @@ def download_audio():
                 'preferredquality': '192',
             }],
             'outtmpl': 'downloads/%(title)s.%(ext)s',  # Save location
-            'cookiefile': cookie_file_path,  # Pass the cookies directly
+            'cookies': cookie_file_path,  # Pass the cookies directly
             'noplaylist': True,  # Don't download playlists
         }
 
