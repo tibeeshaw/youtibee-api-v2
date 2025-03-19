@@ -26,17 +26,21 @@ def download_audio():
     
     if not video_url:
         return jsonify({'error': 'No video URL provided'}), 400
+
+    cookies = request.headers.get("Cookie")
+    if not cookies:
+        return jsonify({"error": "No cookies provided"}), 400
     
-    cookie_file_path = 'cookies.txt'
+    # cookie_file_path = 'cookies.txt'
 
     try:
-        cookies = get_cookies_from_env()  # Get cookies from the environment variable
+        # cookies = get_cookies_from_env()  # Get cookies from the environment variable
         # Print cookies for debugging (remove in production)
         print(f"Cookies: {cookies}")  
 
         # Write cookies to a temporary file
-        with open(cookie_file_path, 'w') as cookie_file:
-            cookie_file.write(cookies)
+        # with open(cookie_file_path, 'w') as cookie_file:
+        #     cookie_file.write(cookies)
 
         ydl_opts = {
             'format': 'm4a/bestaudio/best',
@@ -46,7 +50,7 @@ def download_audio():
                 'preferredquality': '192',
             }],
             'outtmpl': 'downloads/%(title)s.%(ext)s',  # Save location
-            'cookiefile': cookie_file_path,  # Pass the cookies directly
+            "cookie-raw": cookies,  # Use cookies from the request
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -65,10 +69,10 @@ def download_audio():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-    finally:
-        # Clean up the cookie file after usage
-        if os.path.exists(cookie_file_path):
-            os.remove(cookie_file_path)
+    # finally:
+    #     # Clean up the cookie file after usage
+    #     if os.path.exists(cookie_file_path):
+    #         os.remove(cookie_file_path)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
