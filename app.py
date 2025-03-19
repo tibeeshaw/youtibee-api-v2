@@ -23,7 +23,12 @@ def download_audio():
 
     try:
         cookies = get_cookies_from_env()  # Get cookies from the environment variable
-        print(f"Cookies: {cookies}")  # You can remove this line in production
+        # print(f"Cookies: {cookies}")  # You can remove this line in production
+
+        # Write cookies to a temporary file
+        cookie_file_path = 'cookies.txt'
+        with open(cookie_file_path, 'w') as cookie_file:
+            cookie_file.write(cookies)
 
         ydl_opts = {
             'format': 'm4a/bestaudio/best',
@@ -33,7 +38,7 @@ def download_audio():
                 'preferredquality': '192',
             }],
             'outtmpl': 'downloads/%(title)s.%(ext)s',  # Save location
-            'cookiefile': cookies,  # Pass the cookies directly
+            'cookiefile': cookie_file_path,  # Pass the cookies directly
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
