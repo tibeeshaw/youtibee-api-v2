@@ -4,4 +4,4 @@ flask_cors
 ffmpeg-python
 redis
 requests
-"requests[socks]"
+requests[socks]
