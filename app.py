@@ -1,73 +1,174 @@
 import os
+import socket
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import yt_dlp
 import base64
+import redis
+import requests
+import socks
+import re
+import unicodedata
 
 app = Flask(__name__)
+
+# Rate limiting settings
+RATE_LIMIT = int(os.getenv("RATE_LIMIT", 5))  # Max requests per window
+TIME_WINDOW = int(os.getenv("TIME_WINDOW", 60))  # Time window in seconds (1 minute)
+
+# Redis connection (Render provides an internal Redis URL)
+REDIS_URL = os.getenv("REDIS_URL")  # e.g., redis://your-redis-host:6379
+redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+
+SOCKS5_PROXY = os.getenv("SOCKS5_PROXY")  # Example: socks5h://your-proxy-ip:1080
+
+# Set up SOCKS5 proxy if configured
+if SOCKS5_PROXY:
+    proxy_host, proxy_port = SOCKS5_PROXY.replace("socks5h://", "").split(":")
+    proxy_port = int(proxy_port)
+    
+    socks.set_default_proxy(socks.SOCKS5, proxy_host, proxy_port)
+    socket.socket = socks.socksocket  # Override default socket with proxy support
 
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://youtube.tibeechaw.com",
 ]
 
-CORS(app, origins =ALLOWED_ORIGINS)
+CORS(app, origins=ALLOWED_ORIGINS)
+
+def validate_google_token(token):
+    """Validate the opaque token with Google's API and extract the email."""
+    print(f"Validating Google token: {token}")
+    url = f"https://www.googleapis.com/oauth2/v3/tokeninfo?access_token={token}"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Token valid. Extracted email: {data.get('email')}")
+        return data.get("email")  # Extract email if token is valid
+    print("Token validation failed.")
+    return None
 
 def get_cookies_from_env():
-    # Placeholder for getting cookies from the environment variable
     cookies_base64 = os.getenv('YT_COOKIE_BASE64')
     if not cookies_base64:
+        print("No cookies found in environment variable.")
         return ""
+    print("Cookies found in environment variable.")
     return base64.b64decode(cookies_base64).decode('utf-8')
 
 def get_secret_from_env():
-    # Placeholder for getting cookies from the environment variable
     secret = os.getenv('SECRET')
     if not secret:
+        print("SECRET environment variable is not set.")
         raise ValueError("SECRET environment variable is not set.")
+    print("SECRET environment variable retrieved successfully.")
     return secret
 
 @app.route("/ping", methods=["GET"])
 def ping():
+    print("Ping endpoint called.")
     return jsonify({"message": "pong"}), 200
+
+@app.route("/rate-limit", methods=["GET"])
+def get_rate_limit():
+    """Returns the user's current rate limit usage."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    token = auth_header.split(" ")[1]
+    email = validate_google_token(token)
+
+    if not email:
+        return jsonify({"error": "Invalid or expired token"}), 401
+
+    # Redis key for tracking usage per user
+    redis_key = f"rate_limit:{email}"
+
+    # Get request count from Redis
+    request_count = redis_client.get(redis_key)
+    if request_count is None:
+        request_count = 0
+    else:
+        request_count = int(request_count)
+
+    return jsonify({
+        "email": email,
+        "requests_used": request_count,
+        "requests_remaining": max(0, RATE_LIMIT - request_count),
+        "limit": RATE_LIMIT,
+        "window_seconds": TIME_WINDOW
+    })
 
 @app.route('/download/audio', methods=['GET'])
 def download_audio():
+    print("Download audio endpoint called.")
 
+    # Secret validation
     secret = get_secret_from_env()
-
     secretParam = request.args.get('secret')
 
     if not secretParam:
+        print("No secret provided.")
         return jsonify({'error': 'No secret provided'}), 400
 
     secretParam = base64.b64decode(secretParam).decode('utf-8')
 
     if secretParam != secret:
+        print("Invalid secret provided.")
         return jsonify({'error': 'Invalid secret provided'}), 403
 
+    # Check video URL parameter
     video_url = request.args.get('url')
-    
     if not video_url:
+        print("No video URL provided.")
         return jsonify({'error': 'No video URL provided'}), 400
-    
+    print(f"Video URL: {video_url}")
+
+    # Rate limit
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        print("Unauthorized: Missing or invalid Authorization header.")
+        return jsonify({"error": "Unauthorized"}), 401
+
+    token = auth_header.split(" ")[1]
+    email = validate_google_token(token)
+
+    if not email:
+        print("Invalid or expired token.")
+        return jsonify({"error": "Invalid or expired token"}), 401
+
+    print("Getting rate_limit from Redis for email:", email)
+    redis_key = f"rate_limit:{email}"
+    request_count = redis_client.get(redis_key)
+
+    if request_count is None:
+        print(f"First request for {email}. Setting rate limit.")
+        redis_client.setex(redis_key, TIME_WINDOW, 1)
+        request_count = 1
+    else:
+        request_count = int(request_count)
+        print(f"Request count for {email}: {request_count}")
+
+        if request_count >= RATE_LIMIT:
+            print("Rate limit exceeded.")
+            return jsonify({"error": "Rate limit exceeded. Try again later."}), 429
+
+        redis_client.incr(redis_key)
+
     cookie_file_path = 'cookies.txt'
 
     try:
-        cookies = get_cookies_from_env()  # Get cookies from the environment variable
-        # Print cookies for debugging (remove in production)
-        print(f"Cookies: {cookies}")  
-    
-                # Optional cookies handling
-        cookie_file_path = "cookies.txt"
+        cookies = get_cookies_from_env()
         if cookies:
-            print(f"Cookies found. Writing to {cookie_file_path}")  # Debugging (remove in production)
+            print(f"Writing cookies to {cookie_file_path}")
             with open(cookie_file_path, 'w') as cookie_file:
                 cookie_file.write(cookies)
         else:
-            print("No cookies provided, proceeding without cookies.")  # Debugging
+            print("No cookies provided, proceeding without cookies.")
 
-        # Define yt-dlp options
         ydl_opts = {
             'format': 'm4a/bestaudio/best',
             'postprocessors': [{
@@ -75,28 +176,26 @@ def download_audio():
                 'preferredcodec': 'm4a',
                 'preferredquality': '192',
             }],
-            'outtmpl': 'downloads/%(title)s.%(ext)s',  # Save location
+            'outtmpl': 'downloads/%(title)s.%(ext)s',
         }
 
-        # Only add 'cookiefile' if cookies exist
         if cookies:
             ydl_opts['cookiefile'] = cookie_file_path
 
-        # Download audio using yt-dlp
+        print("Starting yt-dlp download...")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(video_url, download=True)
             title = info_dict.get('title', 'Unknown Title')
-            downloaded_file_path = f"downloads/{title}.m4a"  # Assuming 'm4a' format
+            downloaded_file_path = f"downloads/{title}.m4a"
+            print(f"Download complete. File saved at {downloaded_file_path}")
 
-        # Send the file to the client
         response = send_file(downloaded_file_path, as_attachment=True, download_name=f"{title}.m4a")
-
-        # Clean up the downloaded file after sending it
         os.remove(downloaded_file_path)
+        print(f"Downloaded file {downloaded_file_path} removed after sending.")
 
-        # Clean up cookies file if used
         if cookies and os.path.exists(cookie_file_path):
             os.remove(cookie_file_path)
+            print(f"Cookie file {cookie_file_path} removed.")
 
         return response
 
@@ -104,14 +203,11 @@ def download_audio():
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 500
 
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({'error': str(e)}), 500
-
     finally:
-        # Clean up the cookie file after usage
         if os.path.exists(cookie_file_path):
             os.remove(cookie_file_path)
+            print(f"Cookie file {cookie_file_path} cleaned up in finally block.")
 
 if __name__ == '__main__':
+    print("Starting Flask app...")
     app.run(debug=True, host='0.0.0.0', port=5000)
