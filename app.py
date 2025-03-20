@@ -7,8 +7,6 @@ import base64
 import redis
 import requests
 import socks
-import re
-import unicodedata
 
 app = Flask(__name__)
 
