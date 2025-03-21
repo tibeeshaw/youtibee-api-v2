@@ -37,7 +37,17 @@ ALLOWED_ORIGINS = [
 
 CORS(app, origins=ALLOWED_ORIGINS)
 
-default_proxy_list = os.getenv("PROXY_LIST", "").split(",")  # Convertir en liste
+# default_proxy_list = os.getenv("PROXY_LIST", "").split(",")  # Convertir en liste
+# Load proxies from proxy.txt
+def load_proxies(file_path="proxy.txt"):
+    try:
+        with open(file_path, "r") as f:
+            return [line.strip() for line in f if line.strip()]
+    except FileNotFoundError:
+        print("⚠️ proxy.txt not found, proceeding without proxies.")
+        return []
+
+default_proxy_list = load_proxies()
 print(f"Liste des proxies par défaut chargés : {default_proxy_list}")
 
 default_proxy_list = [proxy.strip() for proxy in default_proxy_list if proxy]  # Nettoyer la liste
