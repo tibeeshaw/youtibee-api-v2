@@ -213,19 +213,19 @@ def download_audio():
             'outtmpl': 'downloads/%(title)s.%(ext)s',
         }
 
-        response = requests.get(proxy_scrape_url)
+        # response = requests.get(proxy_scrape_url)
 
-        if response.status_code == 200:
-            proxy_list = response.text.split("\n")
-            proxy_list = [proxy.strip() for proxy in proxy_list if proxy]  # Nettoyer la liste
+        # if response.status_code == 200:
+        #     proxy_list = response.text.split("\n")
+        #     proxy_list = [proxy.strip() for proxy in proxy_list if proxy]  # Nettoyer la liste
 
-            if proxy_list:
-                print(f"Liste des proxies chargés depuis proxy_scrape_url: {proxy_list}")
-            else:
-                print("Aucun proxy trouvé dans la liste.")
-                proxy_list = default_proxy_list.copy()
-        else:
-            proxy_list = default_proxy_list.copy()
+        #     if proxy_list:
+        #         print(f"Liste des proxies chargés depuis proxy_scrape_url: {proxy_list}")
+        #     else:
+        #         print("Aucun proxy trouvé dans la liste.")
+        #         proxy_list = default_proxy_list.copy()
+        # else:
+        #     proxy_list = default_proxy_list.copy()
 
         # working_proxies = get_working_proxies(proxy_list)
 
