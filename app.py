@@ -44,6 +44,22 @@ proxy_scrape_url = "https://api.proxyscrape.com/v2/?request=displayproxies&proto
 
 print(f"Liste des proxies par défaut chargés : {default_proxy_list}")
 
+def get_working_proxies(proxy_list):
+    """Test proxies from proxy_list and return only the working ones."""
+    working_proxies = []
+
+    for proxy in proxy_list:
+        test_proxy = {"http": f"http://{proxy}", "https": f"http://{proxy}"}
+        try:
+            test_response = requests.get("https://www.google.com", proxies=test_proxy, timeout=5)
+            if test_response.status_code == 200:
+                working_proxies.append(proxy)
+                print(f"✅ Proxy works: {proxy}")
+        except requests.RequestException:
+            print(f"❌ Proxy failed: {proxy}")
+
+    return working_proxies
+
 def validate_google_token(token):
     """Validate the opaque token with Google's API and extract the email."""
     print(f"Validating Google token: {token}")
@@ -200,8 +216,10 @@ def download_audio():
         else:
             proxy_list = default_proxy_list.copy()
 
-        if proxy_list:
-            selected_proxy = random.choice(proxy_list)
+        working_proxies = get_working_proxies(proxy_list)
+
+        if working_proxies:
+            selected_proxy = random.choice(working_proxies)
             print(f"Utilisation du proxy : {selected_proxy}")
             ydl_opts["proxy"] = selected_proxy
 
