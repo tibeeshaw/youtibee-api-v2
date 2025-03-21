@@ -38,12 +38,14 @@ ALLOWED_ORIGINS = [
 CORS(app, origins=ALLOWED_ORIGINS)
 
 default_proxy_list = os.getenv("PROXY_LIST", "").split(",")  # Convertir en liste
+print(f"Liste des proxies par défaut chargés : {default_proxy_list}")
+
 default_proxy_list = [proxy.strip() for proxy in default_proxy_list if proxy]  # Nettoyer la liste
 
 # Récupérer des proxies gratuits depuis ProxyScrape
 proxy_scrape_url = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=10000&country=all"
 
-print(f"Liste des proxies par défaut chargés : {default_proxy_list}")
+print(f"Liste des proxies nettoyés par défaut chargés : {default_proxy_list}")
 
 def test_proxy(proxy):
     """Tests if a proxy is working and returns it if valid."""
@@ -225,7 +227,8 @@ def download_audio():
         else:
             proxy_list = default_proxy_list.copy()
 
-        working_proxies = get_working_proxies(proxy_list)
+        # working_proxies = get_working_proxies(proxy_list)
+        working_proxies = proxy_list.copy() if not working_proxies else working_proxies
 
         if working_proxies:
             selected_proxy = random.choice(working_proxies)
