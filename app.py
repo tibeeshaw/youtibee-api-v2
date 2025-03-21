@@ -228,10 +228,9 @@ def download_audio():
             proxy_list = default_proxy_list.copy()
 
         # working_proxies = get_working_proxies(proxy_list)
-        working_proxies = proxy_list.copy() if not working_proxies else working_proxies
 
-        if working_proxies:
-            selected_proxy = random.choice(working_proxies)
+        if proxy_list:
+            selected_proxy = random.choice(proxy_list)
             print(f"Utilisation du proxy : {selected_proxy}")
             ydl_opts["proxy"] = selected_proxy
 

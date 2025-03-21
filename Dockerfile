@@ -15,14 +15,13 @@ COPY . /app
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN echo "PROXY_LIST=$(cat proxy.txt | tr '\n' ',')" >> /etc/environment
-
 # Expose the port the app will run on
 EXPOSE 5000
 
 # Define environment variable to tell Flask it’s in production mode
 ENV FLASK_ENV=production
 ENV YT_COOKIE_BASE64=${YT_COOKIE_BASE64}
+ENV PROXY_LIST=$(cat proxy.txt | tr '\n' ',')
 
 # Run the app
 CMD ["python", "app.py"]
