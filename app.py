@@ -238,12 +238,12 @@ def download_audio():
         #     proxy_list = default_proxy_list.copy()
 
         # working_proxies = get_working_proxies(proxy_list)
-        proxy_list = default_proxy_list.copy()
+        # proxy_list = default_proxy_list.copy()
 
-        if proxy_list:
-            selected_proxy = random.choice(proxy_list)
-            print(f"Utilisation du proxy : {selected_proxy}")
-            ydl_opts["proxy"] = selected_proxy
+        # if proxy_list:
+        #     selected_proxy = random.choice(proxy_list)
+        #     print(f"Utilisation du proxy : {selected_proxy}")
+        #     ydl_opts["proxy"] = selected_proxy
 
         if cookies:
             ydl_opts['cookiefile'] = cookie_file_path
