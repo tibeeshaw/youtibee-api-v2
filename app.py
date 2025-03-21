@@ -36,10 +36,13 @@ ALLOWED_ORIGINS = [
 
 CORS(app, origins=ALLOWED_ORIGINS)
 
-proxy_list = os.getenv("PROXY_LIST", "").split(",")  # Convertir en liste
-proxy_list = [proxy.strip() for proxy in proxy_list if proxy]  # Nettoyer la liste
+default_proxy_list = os.getenv("PROXY_LIST", "").split(",")  # Convertir en liste
+default_proxy_list = [proxy.strip() for proxy in default_proxy_list if proxy]  # Nettoyer la liste
 
-print(f"Liste des proxies chargés : {proxy_list}")
+# Récupérer des proxies gratuits depuis ProxyScrape
+proxy_scrape_url = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=10000&country=all"
+
+print(f"Liste des proxies par défaut chargés : {default_proxy_list}")
 
 def validate_google_token(token):
     """Validate the opaque token with Google's API and extract the email."""
@@ -183,6 +186,19 @@ def download_audio():
             'outtmpl': 'downloads/%(title)s.%(ext)s',
         }
 
+        response = requests.get(proxy_scrape_url)
+
+        if response.status_code == 200:
+            proxy_list = response.text.split("\n")
+            proxy_list = [proxy.strip() for proxy in proxy_list if proxy]  # Nettoyer la liste
+
+            if proxy_list:
+                print(f"Liste des proxies chargés depuis proxy_scrape_url: {proxy_list}")
+            else:
+                print("Aucun proxy trouvé dans la liste.")
+                proxy_list = default_proxy_list.copy()
+        else:
+            proxy_list = default_proxy_list.copy()
 
         if proxy_list:
             selected_proxy = random.choice(proxy_list)
