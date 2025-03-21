@@ -7,6 +7,7 @@ import base64
 import redis
 import requests
 import socks
+import random
 
 app = Flask(__name__)
 
@@ -34,6 +35,11 @@ ALLOWED_ORIGINS = [
 ]
 
 CORS(app, origins=ALLOWED_ORIGINS)
+
+proxy_list = os.getenv("PROXY_LIST", "").split(",")  # Convertir en liste
+proxy_list = [proxy.strip() for proxy in proxy_list if proxy]  # Nettoyer la liste
+
+print(f"Liste des proxies chargés : {proxy_list}")
 
 def validate_google_token(token):
     """Validate the opaque token with Google's API and extract the email."""
@@ -176,6 +182,12 @@ def download_audio():
             }],
             'outtmpl': 'downloads/%(title)s.%(ext)s',
         }
+
+
+        if proxy_list:
+            selected_proxy = random.choice(proxy_list)
+            print(f"Utilisation du proxy : {selected_proxy}")
+            ydl_opts["proxy"] = selected_proxy
 
         if cookies:
             ydl_opts['cookiefile'] = cookie_file_path

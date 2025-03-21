@@ -15,6 +15,8 @@ COPY . /app
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN echo "PROXY_LIST=$(cat proxy.txt | tr '\n' ',')" >> /etc/environment
+
 # Expose the port the app will run on
 EXPOSE 5000
 
