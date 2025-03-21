@@ -8,6 +8,7 @@ import redis
 import requests
 import socks
 import random
+from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 
@@ -44,20 +45,28 @@ proxy_scrape_url = "https://api.proxyscrape.com/v2/?request=displayproxies&proto
 
 print(f"Liste des proxies par défaut chargés : {default_proxy_list}")
 
-def get_working_proxies(proxy_list):
-    """Test proxies from proxy_list and return only the working ones."""
+def test_proxy(proxy):
+    """Tests if a proxy is working and returns it if valid."""
+    test_proxy = {"http": f"http://{proxy}", "https": f"http://{proxy}"}
+    try:
+        test_response = requests.get("https://www.google.com", proxies=test_proxy, timeout=5)
+        if test_response.status_code == 200:
+            print(f"✅ Proxy works: {proxy}")
+            return proxy
+    except requests.RequestException:
+        print(f"❌ Proxy failed: {proxy}")
+    return None
+
+def get_working_proxies(proxy_list, max_threads=10):
+    """Runs proxy testing in parallel and returns a list of working proxies."""
     working_proxies = []
+    
+    # Run tests in parallel
+    with ThreadPoolExecutor(max_threads) as executor:
+        results = list(executor.map(test_proxy, proxy_list))
 
-    for proxy in proxy_list:
-        test_proxy = {"http": f"http://{proxy}", "https": f"http://{proxy}"}
-        try:
-            test_response = requests.get("https://www.google.com", proxies=test_proxy, timeout=5)
-            if test_response.status_code == 200:
-                working_proxies.append(proxy)
-                print(f"✅ Proxy works: {proxy}")
-        except requests.RequestException:
-            print(f"❌ Proxy failed: {proxy}")
-
+    # Filter out None values (failed proxies)
+    working_proxies = [proxy for proxy in results if proxy]
     return working_proxies
 
 def validate_google_token(token):
